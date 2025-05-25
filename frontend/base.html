@@ -136,7 +136,6 @@
     let dexContract = null;
 
     async function getAccess() {
-      debugger;
       if (tokenContract === null) {
         provider = new ethers.providers.Web3Provider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
@@ -161,7 +160,6 @@
     }
 
     async function getBalance() {
-      debugger;
       await getAccess();
       const signerBalance = await tokenContract.balanceOf(
         await provider.getSigner().getAddress()
@@ -182,7 +180,6 @@
     }
 
     async function sellBalance() {
-        debugger;
       await getAccess();
       const balanceInputElem = document.getElementById("tokensToSell");
       if (!balanceInputElem.value?.length) {
@@ -198,7 +195,6 @@
     }
 
     async function buyTokens() {
-        debugger;
       await getAccess();
       const tokensToBuyIntputElem = document.getElementById("tokensToBuy");
       if (!tokensToBuyIntputElem.value?.length) {
@@ -215,13 +211,11 @@
         await getBalance();
         await getDexBalance();
       } catch(err) {
-        debugger;
         console.log(err);
       }
     }
 
     async function withdrawTokens() {
-        debugger;
         await getAccess();
         await dexContract.withdrawTokens();
         await getBalance();
