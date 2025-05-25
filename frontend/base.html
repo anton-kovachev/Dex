@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dex</title>
+  </head>
+  <body">
+  <div class="panel">
+    <div class="container">
+      <div class="item">
+        <h3>My Balance</h3>
+      </div>
+      <div class="item">
+        <span>Your Balance is: </span>
+        <b id="signerBalance"></b>
+        <b id="tokenSymbol"></b>
+      </div>
+      <div class="item">
+        <button onclick="getBalance()">View My Balance</button>
+      </div>
+    </div>
+    <div class="container">
+      <div class="item">
+        <h3>Sell</h3>
+      </div>
+      <div class="item">
+        <input id="tokensToSell" placeholder="Enter tokens to sell" type="number" />
+      </div>
+      <div class="item">
+        <button onclick="sellBalance()">Sell to Dex</button>
+      </div>
+    </div>
+    <div class="container">
+      <div class="item">
+        <h3>Buy</h3>
+      </div>
+      <div class="item">
+        <input id="tokensToBuy" placeholder="Enter tokens to buy" type="number" />
+      </div>
+      <div class="item">
+        <button onclick="buyTokens()">Buy from Dex</button>
+      </div>
+    </div>
+    <div class="container">
+        <div class="item">
+            <h3>Withdraw Tokens</h3>
+        </div>
+        <div class="item">
+           <button onclick="withdrawTokens()">Withdraw tokens</button> 
+        </div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="container">
+      <div class="item">
+        <h3>Dex Balance</h3>
+      </div>
+      <div class="item">
+        <span>Dex Balance is: </span>
+        <b id="dexBalance"></b>
+        <b id="dexTokenSymbol"></b>
+      </div>
+      <div class="item">
+        <button onclick="getDexBalance()">View Dex Balance</button>
+      </div>
+    </div>
+  </div>
+  </body>
+  <style>
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: start;
+      column-gap: 3.5rem;
+      row-gap: 2rem;
+    }
+
+    .panel {
+        display: flex;
+        flex-direction: row;
+        justify-content: center;
+        align-items: center;
+        row-gap: 5rem;
+        column-gap: 5rem;
+    }
+
+    .mt-10 {
+        margin-top: 2rem;   
+    }
+  </style>
+
+  <script
+    defer
+    src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.2.0/ethers.umd.min.js"
+    integrity="sha512-YrJ7ZzmtmVJdwCwu6B91ThUGLfNjsTdHf1IdPf3J7AZQIpVDvahcBLWoKC1ebZ9RN6upm9ZheIFKSf7s7k/ZYQ=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+  <script>
+    const tokenAddress = "0x959922bE3CAee4b8Cd9a407cc3ac1C251C2007B1";
+    const tokenAbi = [
+      "constructor(uint256 initialSupply)",
+      "error ERC20InsufficientAllowance(address spender, uint256 allowance, uint256 needed)",
+      "error ERC20InsufficientBalance(address sender, uint256 balance, uint256 needed)",
+      "error ERC20InvalidApprover(address approver)",
+      "error ERC20InvalidReceiver(address receiver)",
+      "error ERC20InvalidSender(address sender)",
+      "error ERC20InvalidSpender(address spender)",
+      "event Approval(address indexed owner, address indexed spender, uint256 value)",
+      "event Transfer(address indexed from, address indexed to, uint256 value)",
+      "function allowance(address owner, address spender) view returns (uint256)",
+      "function approve(address spender, uint256 value) returns (bool)",
+      "function balanceOf(address account) view returns (uint256)",
+      "function decimals() view returns (uint8)",
+      "function name() view returns (string)",
+      "function symbol() view returns (string)",
+      "function totalSupply() view returns (uint256)",
+      "function transfer(address to, uint256 value) returns (bool)",
+      "function transferFrom(address from, address to, uint256 value) returns (bool)",
+    ];
+
+    const dexAddress = "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE";
+    const dexAbi = [
+      "constructor(address token, uint256 price)",
+      "function buy(uint256 numTokens) payable",
+      "function getTokenBalance() view returns (uint256)",
+      "function sell()",
+      "function withdrawFunds()",
+      "function withdrawTokens()",
+    ];
+
+    let provider = null;
+    let tokenContract = null;
+    let dexContract = null;
+
+    async function getAccess() {
+      debugger;
+      if (tokenContract === null) {
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+
+        const signer = provider.getSigner();
+        tokenContract = new ethers.Contract(tokenAddress, tokenAbi, signer);
+        dexContract = new ethers.Contract(dexAddress, dexAbi, signer);
+
+        provider.on("accountsChanged", handleChangeAccounts);
+      }
+    }
+
+    function handleChangeAccounts(accounts) {
+      if (!accounts?.length) {
+        tokenContract = null;
+        provider = null;
+        const signerBalanceElem = document.getElementById("signerBalance");
+        signerBalanceElem.innerText = "";
+        const tokenSymbolElem = document.getElementById("tokenSymbol");
+        tokenSymbolElem.innerText = "";
+      }
+    }
+
+    async function getBalance() {
+      debugger;
+      await getAccess();
+      const signerBalance = await tokenContract.balanceOf(
+        await provider.getSigner().getAddress()
+      );
+      const signerBalanceElem = document.getElementById("signerBalance");
+      signerBalanceElem.innerText = signerBalance;
+      const tokenSymbolElem = document.getElementById("tokenSymbol");
+      tokenSymbolElem.innerText = await tokenContract.symbol();
+    }
+
+    async function getDexBalance() {
+      getAccess();
+      const dexBalance = await tokenContract.balanceOf(dexAddress);
+      const dexBalanceElem = document.getElementById("dexBalance");
+      dexBalanceElem.innerText = dexBalance;
+      const dexTokenSymbolElem = document.getElementById("dexTokenSymbol");
+      dexTokenSymbolElem.innerText = await tokenContract.symbol();
+    }
+
+    async function sellBalance() {
+        debugger;
+      await getAccess();
+      const balanceInputElem = document.getElementById("tokensToSell");
+      if (!balanceInputElem.value?.length) {
+        alert("Enter token amount to sell");
+        return;
+      }
+      
+      const tokensToSellToDex = Number.parseInt(balanceInputElem.value);
+      await tokenContract.approve(dexAddress, tokensToSellToDex);
+      await dexContract.sell();
+      await getBalance();
+      await getDexBalance();
+    }
+
+    async function buyTokens() {
+        debugger;
+      await getAccess();
+      const tokensToBuyIntputElem = document.getElementById("tokensToBuy");
+      if (!tokensToBuyIntputElem.value?.length) {
+        alert("Enter token amount to buy");
+        return;
+      }
+      
+      const tokensToBuyFromDex = Number.parseInt(tokensToBuyIntputElem.value);
+
+      try
+      {
+        const price = ethers.utils.parseEther("1");
+        await dexContract.buy(tokensToBuyFromDex, { value: tokensToBuyFromDex *  10 });
+        await getBalance();
+        await getDexBalance();
+      } catch(err) {
+        debugger;
+        console.log(err);
+      }
+    }
+
+    async function withdrawTokens() {
+        debugger;
+        await getAccess();
+        await dexContract.withdrawTokens();
+        await getBalance();
+        await getDexBalance();
+    }
+  </script>
+</html>
